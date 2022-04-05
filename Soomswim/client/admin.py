@@ -11,14 +11,14 @@ class AppUserAdmin(admin.ModelAdmin):
 
 @admin.register(Story)
 class StoryAdmin(admin.ModelAdmin):
-    list_display = ['id', 'writer', 'date', 'text']
-    list_display_links = ['writer', 'date', 'text']
+    list_display = ['id', 'writer', 'date', 'content']
+    list_display_links = ['writer', 'date', 'content']
     list_per_page = 20
 
 @admin.register(Reply)
 class ReplyAdmin(admin.ModelAdmin):
-    list_display = ['id', 'writer', 'caller', 'date', 'text', 'story']
-    list_display_links = ['writer', 'caller', 'date', 'text', 'story']
+    list_display = ['id', 'writer', 'caller', 'date', 'content', 'story']
+    list_display_links = ['writer', 'caller', 'date', 'content', 'story']
     list_per_page = 20
 
 @admin.register(Relationship)

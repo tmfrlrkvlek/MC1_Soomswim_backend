@@ -15,3 +15,15 @@ def login(request) :
         user.save()
         return JsonResponse({'code':201, 'message': 'sign up complete'}, status=201)
 
+@api_view(['POST'])
+def createStory(request) :
+    content = request.data['content']
+    user = AppUser.objects.get(name = request.data['writer'])
+    if len(content) > 5000 : 
+        return JsonResponse({'code':422, 'message': 'too long contents'}, status=422)
+    else :
+        story = Story()
+        story.content = content
+        story.writer = user
+        story.save()
+        return JsonResponse({'code':201, 'message': 'story upload complete'}, status=201)

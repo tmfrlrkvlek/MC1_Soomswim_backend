@@ -1,4 +1,5 @@
 from django.db import models
+from datetime import datetime
 
 # Create your models here.
 class AppUser(models.Model) :
@@ -9,13 +10,13 @@ class AppUser(models.Model) :
         return self.name
 
 class Story(models.Model) :
-    date = models.DateTimeField()
-    text = models.TextField(max_length=5000)
+    date = models.DateTimeField(default=datetime.now)
+    content = models.TextField(max_length=5000)
     writer = models.ForeignKey(AppUser, on_delete=models.CASCADE)
     
 class Reply(models.Model)  :
     date = models.DateTimeField()
-    text = models.TextField(max_length=5000)
+    content = models.TextField(max_length=5000)
     writer = models.ForeignKey(AppUser, on_delete=models.CASCADE)
     caller = models.CharField(max_length=30)
     story = models.ForeignKey(Story, on_delete=models.CASCADE)
