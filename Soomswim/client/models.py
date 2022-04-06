@@ -15,14 +15,14 @@ class Story(models.Model) :
     writer = models.ForeignKey(AppUser, on_delete=models.CASCADE)
     
 class Reply(models.Model)  :
-    date = models.DateTimeField()
+    date = models.DateTimeField(default=datetime.now)
     content = models.TextField(max_length=5000)
-    writer = models.ForeignKey(AppUser, on_delete=models.CASCADE)
-    caller = models.CharField(max_length=30)
+    sender = models.ForeignKey(AppUser, on_delete=models.CASCADE)
+    writer = models.CharField(max_length=30)
     story = models.ForeignKey(Story, on_delete=models.CASCADE)
 
     def __str__(self) :
-        return self.date + ' to ' + self.caller
+        return datetime.strftime(self.date, '%Y.%m.%d %l:%M %p') + ' to ' + self.writer
 
 class Relationship(models.Model) :
     requester = models.ForeignKey(AppUser, on_delete=models.CASCADE, related_name='requester')

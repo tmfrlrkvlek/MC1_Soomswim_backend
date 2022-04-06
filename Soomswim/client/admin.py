@@ -17,8 +17,8 @@ class StoryAdmin(admin.ModelAdmin):
 
 @admin.register(Reply)
 class ReplyAdmin(admin.ModelAdmin):
-    list_display = ['id', 'writer', 'caller', 'date', 'content', 'story']
-    list_display_links = ['writer', 'caller', 'date', 'content', 'story']
+    list_display = ['id', 'writer', 'sender', 'date', 'content', 'story']
+    list_display_links = ['writer', 'sender', 'date', 'content', 'story']
     list_per_page = 20
 
 @admin.register(Relationship)
