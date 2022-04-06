@@ -40,28 +40,37 @@ def story(request) :
     user = AppUser.objects.get(name = request.GET['name'])
     story = Story.objects.get(id=request.GET['story'])
     data = model_to_dict(story)
-    data['date'] = datetime.strftime(data['date'], '%Y.%m.%d %l:%M %p')
+    date = data['date']
+    data['date'] = datetime.strftime(date, '%Y.%m.%d %l:%M %p')
     data['writer'] = model_to_dict(story.writer, fields = ['id', 'name'])
     data['writer']['profile'] = ''
+    data['reply_check_permission'] = date <= datetime.now() - timedelta(hours=AVAILABLE_TIME)
+    remaining_time = 0 if data['reply_check_permission'] else date + timedelta(hours=AVAILABLE_TIME) - datetime.now() 
+    if remaining_time == 0 :
+        data['remaining_time'] = None
+    else :
+        remaining_time = str(remaining_time).split(':')
+        data['remaining_time'] = '{}시간 {}분 남음'.format(remaining_time[0], remaining_time[1]) if remaining_time[0] != '0' else '{}분 남음'.format(remaining_time[1])         
     if story.writer == user :
         data['reply_availability'] = False
         data['reply_existence'] = False
     else : 
         data['reply_availability'] = story.date > datetime.now() - timedelta(hours=AVAILABLE_TIME)
         data['reply_existence'] = Reply.objects.filter(writer = user, story = story).exists()
+        data['reply_check_permission'] = False
     return JsonResponse({'data': data, 'code': 200, 'message': 'get story complete'}, status=200)
 
 @api_view(['GET'])
-def storys(request) :
+def stories(request) :
     user = AppUser.objects.get(name = request.GET['name'])
     relations = Relationship.objects.filter(Q(receiver = user)|Q(requester = user), state = 1)
     writers = [user]
     [writers.append(relation.requester if relation.requester != user else relation.receiver) for relation in relations]
     end_time = datetime.now() - timedelta(hours=AVAILABLE_TIME)
-    storys = Story.objects.filter(writer__in = writers, date__gte=end_time).order_by('-date').values('id', 'date', 'content', 'writer_id')
-    if storys.exists() :
+    stories = Story.objects.filter(writer__in = writers, date__gte=end_time).order_by('-date').values('id', 'date', 'content', 'writer_id')
+    if stories.exists() :
         data = []
-        for story in storys :
+        for story in stories :
             story['writer'] = AppUser.objects.filter(id = story['writer_id']).values('id', 'name', 'profile')[0]
             story['date'] = datetime.strftime(story['date'], '%Y.%m.%d %l:%M %p')
             story['content'] = story['content'][:150]
@@ -69,7 +78,7 @@ def storys(request) :
             data.append(story)
         return JsonResponse({'data': data, 'code': 200, 'message': 'get story complete'}, status=200)
     else :
-        return JsonResponse({'code': 204, 'message': 'no contents'}, status=204)
+        return JsonResponse({'data': [], 'code': 204, 'message': 'no contents'}, status=204)
 
 @api_view(['POST'])
 def reply(request) :
@@ -87,18 +96,26 @@ def reply(request) :
         return JsonResponse({'code':201, 'message': 'reply upload complete'}, status=201)
 
 @api_view(['GET'])
-def mystorys(request) :
+def mystories(request) :
     user = AppUser.objects.get(name = request.GET['name'])
-    storys = Story.objects.filter(writer = user).order_by('-date').values('id', 'date', 'content', 'writer_id')
-    if storys.exists() :
+    stories = Story.objects.filter(writer = user).order_by('-date').values('id', 'date', 'content', 'writer_id')
+    if stories.exists() :
         data = []
-        for story in storys :
+        for story in stories :
             story['writer'] = AppUser.objects.filter(id = story['writer_id']).values('id', 'name', 'profile')[0]
-            story['date'] = datetime.strftime(story['date'], '%Y.%m.%d %l:%M %p')
+            date = story['date']
+            story['date'] = datetime.strftime(date, '%Y.%m.%d %l:%M %p')
             story['content'] = story['content'][:30]
+            story['reply_check_permission'] = date <= datetime.now() - timedelta(hours=AVAILABLE_TIME)
+            remaining_time = 0 if story['reply_check_permission'] else date + timedelta(hours=AVAILABLE_TIME) - datetime.now() 
+            if remaining_time == 0 :
+                story['remaining_time'] = None
+            else :
+                remaining_time = str(remaining_time).split(':')
+                story['remaining_time'] = '{}시간 {}분 남음'.format(remaining_time[0], remaining_time[1]) if remaining_time[0] != '0' else '{}분 남음'.format(remaining_time[1]) 
             del story['writer_id']
             data.append(story)
-        return JsonResponse({'data': data, 'code': 200, 'message': 'get storys complete'}, status=200)
+        return JsonResponse({'data': data, 'code': 200, 'message': 'get stories complete'}, status=200)
     else :
         return JsonResponse({'code': 204, 'message': 'no contents'}, status=204)
 
@@ -132,7 +149,6 @@ def friendResponse(request) :
 @api_view(['GET'])
 def friends(request) :
     user = AppUser.objects.get(name = request.GET['name'])
-    user = AppUser.objects.get(name = request.GET['name'])
     relations = Relationship.objects.filter(Q(receiver = user)|Q(requester = user), state = 1)
     if relations.exists() :
         friends = []
@@ -144,4 +160,25 @@ def friends(request) :
     else :
         return JsonResponse({'code': 204, 'message': 'no friends'}, status=204)
 
-        
+@api_view(['GET'])
+def replies(request) :
+    user = AppUser.objects.get(name = request.GET['name'])
+    story = Story.objects.get(id = request.GET['story'])
+    if story.writer != user :
+        return JsonResponse({'code': 401, 'message': 'unauthorized request'}, status=401)
+    elif story.date > datetime.now() - timedelta(hours=AVAILABLE_TIME) :
+        return JsonResponse({'code': 403, 'message': 'Forbidden request'}, status=403)
+    else :
+        replies = Reply.objects.filter(story = story)
+        if replies.exists() :
+            return JsonResponse({'data': {'id_list': [reply.id for reply in replies], 'count': len(replies) },'code': 200, 'message': 'get replies complete'}, status=200)
+        else :
+            return JsonResponse({'code': 204, 'message': 'no replies'}, status=204)
+
+@api_view(['GET'])
+def readReply(request) :
+    reply = Reply.objects.get(id = request.GET['reply'])
+    data = model_to_dict(reply, fields=['id', 'content', 'writer'])
+    data['date'] = datetime.strftime(reply.date, '%Y.%m.%d %l:%M %p')
+    return JsonResponse({'data': data,'code': 200, 'message': 'get reply complete'}, status=200)
+
