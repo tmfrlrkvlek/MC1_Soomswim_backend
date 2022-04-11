@@ -122,13 +122,31 @@ def mystories(request) :
 @api_view(['POST'])
 def friendRequest(request) :
     user = AppUser.objects.get(name = request.data['name'])
-    friend = AppUser.objects.get(id = request.data['friend'])
-    if Relationship.objects.filter(requester = user, receiver = friend).exists() or Relationship.objects.filter(requester = friend, receiver = user).exists() :
-        return JsonResponse({'code':202, 'message': 'already exists request'}, status=202)
+    friend = AppUser.objects.filter(name=request.data['friend'])
+    if friend.exists() :
+        friend = friend[0]
+    elif user == friend :
+        return JsonResponse({'code':401, 'message': 'unauthorized request'}, status=401)
+    else :
+        return JsonResponse({'code':404, 'message': 'friend does not exist'}, status=404)
+    relation = Relationship.objects.filter(requester = friend, receiver = user)
+    if relation.exists() :
+        relation = relation[0]
+        relation.requester = user
+        relation.receiver = friend
+        relation.state = 0
+        relation.save()
+        return JsonResponse({'code':201, 'message': 'request complete'}, status=201)
+    relation = Relationship.objects.filter(requester = user, receiver = friend)
+    if relation.exists() :
+        relation = relation[0]
+        relation.state = 0
+        relation.save()
+        return JsonResponse({'code':201, 'message': 'request complete'}, status=201)
     else :
         relationship = Relationship()
-        relationship.requester = AppUser.objects.get(name = request.data['name'])
-        relationship.receiver = AppUser.objects.get(id = request.data['friend'])
+        relationship.requester = user
+        relationship.receiver = friend
         relationship.save()
         return JsonResponse({'code':201, 'message': 'request complete'}, status=201)
 
@@ -136,7 +154,7 @@ def friendRequest(request) :
 def friendResponse(request) :
     user = AppUser.objects.get(name = request.data['name'])
     friend = AppUser.objects.get(id = request.data['friend'])
-    relation = Relationship.objects.filter(requester = friend, receiver = user, state = 0)
+    relation = Relationship.objects.filter(Q(requester = friend, receiver = user)|Q(requester = user, receiver = friend))
     if relation.exists() :
         relation = relation[0]
         relation.state = 1 if request.data['response'] else 2
@@ -149,14 +167,17 @@ def friendResponse(request) :
 @api_view(['GET'])
 def friends(request) :
     user = AppUser.objects.get(name = request.GET['name'])
-    relations = Relationship.objects.filter(Q(receiver = user)|Q(requester = user), state = 1)
+    relations = Relationship.objects.filter(Q(receiver = user)|Q(requester = user), Q(state = 0)|Q(state = 1))
     if relations.exists() :
-        friends = []
+        datas = []
         for relation in relations :
             friend = model_to_dict(relation.requester if relation.requester != user else relation.receiver, ['id', 'name'])
             friend['profile'] = ''
-            friends.append(friend)
-        return JsonResponse({'data': friends, 'code': 200, 'message': 'get friends complete'}, status=200)
+            if relation.state == 1 : state = 0 # 친구
+            elif relation.requester == user : state = 1 # 대기
+            else : state = 2 # 수락
+            datas.append({'id': relation.id,'state': state, 'friend': friend})
+        return JsonResponse({'data': datas, 'code': 200, 'message': 'get friends complete'}, status=200)
     else :
         return JsonResponse({'code': 204, 'message': 'no friends'}, status=204)
 

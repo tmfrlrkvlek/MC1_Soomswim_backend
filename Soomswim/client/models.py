@@ -30,8 +30,8 @@ class Relationship(models.Model) :
     state = models.IntegerField(default=0) # 0: 대기 1: 수락 2: 거절
 
     def __str__(self) :
-        str = '요청:' + requester.name + '수신:' + receiver.name + '상태: '
-        if state == 0 : return str + '대기'
-        elif state == 1 : return str + '수락'
-        else : return str + '거절'
+        string = '요청:' + self.requester.name + '수신:' + self.receiver.name + '상태: '
+        if self.state == 0 : return string + '대기'
+        elif self.state == 1 : return string + '수락'
+        else : return string + '거절'
 
