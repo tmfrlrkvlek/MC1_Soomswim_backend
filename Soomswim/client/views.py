@@ -96,6 +96,12 @@ def reply(request) :
         return JsonResponse({'code':201, 'message': 'reply upload complete'}, status=201)
 
 @api_view(['GET'])
+def myfriends(request) :
+    user = AppUser.objects.get(name = request.GET['name'])
+    relations = Relationship.objects.filter(Q(receiver = user)|Q(requester = user), state = 1)
+    return JsonResponse({'data': len(relations), 'code': 200, 'message': 'get friends complete'}, status=200)
+
+@api_view(['GET'])
 def mystories(request) :
     user = AppUser.objects.get(name = request.GET['name'])
     stories = Story.objects.filter(writer = user).order_by('-date').values('id', 'date', 'content', 'writer_id')
@@ -125,7 +131,7 @@ def friendRequest(request) :
     friend = AppUser.objects.filter(name=request.data['friend'])
     if friend.exists() :
         friend = friend[0]
-    elif user == friend :
+    if user == friend :
         return JsonResponse({'code':401, 'message': 'unauthorized request'}, status=401)
     else :
         return JsonResponse({'code':404, 'message': 'friend does not exist'}, status=404)

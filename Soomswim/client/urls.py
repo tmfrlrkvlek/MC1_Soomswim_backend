@@ -8,6 +8,7 @@ urlpatterns = [
     path('stories', stories, name='stories'),
     path('reply', reply, name='reply'),
     path('mypage/stories', mystories, name='mystories'),
+    path('mypage/friends', myfriends, name='myfriends'),
     path('friend/request', friendRequest, name='friend/request'),
     path('friend/response', friendResponse, name='friend/response'),
     path('friends', friends, name='friends'),
