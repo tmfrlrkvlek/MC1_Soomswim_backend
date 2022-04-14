@@ -8,7 +8,7 @@ from django.db.models import Q
 from django.core import serializers
 from django.forms.models import model_to_dict
 
-AVAILABLE_TIME = 8
+AVAILABLE_TIME = 12
 
 # Create your views here.
 @api_view(['POST'])
@@ -136,7 +136,7 @@ def friendRequest(request) :
     
     if user == friend :
         return JsonResponse({'code':401, 'message': 'unauthorized request'}, status=401)
-        
+
     relation = Relationship.objects.filter(requester = friend, receiver = user)
     if relation.exists() :
         relation = relation[0]
