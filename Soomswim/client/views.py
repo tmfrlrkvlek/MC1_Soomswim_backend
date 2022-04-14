@@ -131,10 +131,12 @@ def friendRequest(request) :
     friend = AppUser.objects.filter(name=request.data['friend'])
     if friend.exists() :
         friend = friend[0]
-    if user == friend :
-        return JsonResponse({'code':401, 'message': 'unauthorized request'}, status=401)
     else :
         return JsonResponse({'code':404, 'message': 'friend does not exist'}, status=404)
+    
+    if user == friend :
+        return JsonResponse({'code':401, 'message': 'unauthorized request'}, status=401)
+        
     relation = Relationship.objects.filter(requester = friend, receiver = user)
     if relation.exists() :
         relation = relation[0]
